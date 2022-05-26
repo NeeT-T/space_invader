@@ -13,6 +13,13 @@ public class Direction {
 		return k_down;
 	}
 	
+	public void stop() {
+		k_up = false;
+		k_down = false;
+		k_right = false;
+		k_left = false;
+	}
+	
 	public void setK_down(boolean k_down) {
 		this.k_down = k_down;
 	}

@@ -5,6 +5,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
+import java.util.ArrayList;
 import java.util.Random;
 
 import javax.swing.JPanel;
@@ -16,26 +17,30 @@ public class Game extends JPanel {
 	 */
 	private static final long serialVersionUID = 1L;
 	private static final int MILISECOND_PER_FRAME = 17;
-	private Main_ship main_ship;
-	private EnemyLastLine enemy;
-
+	private Ship player;
+	private Enemy enemy;
+	boolean check = true;
+	
 	public Game() {
 		setFocusable(true);
 		setLayout(null);
-		main_ship = new Main_ship();
-		enemy = new EnemyLastLine();
+		player = new Ship();
+		enemy = new Enemy();
+
 		addKeyListener(new KeyListener() {
 			@Override
-			public void keyTyped(KeyEvent e) {
-				
+			public void keyReleased(KeyEvent e) {
+					setDirectionByKeyPressed(e, player, false);
 			}
 			@Override
-			public void keyReleased(KeyEvent e) {
-				setDirectionByKeyPressed(e, main_ship, false);
-			}
-			@Override 
 			public void keyPressed(KeyEvent e) {
-				setDirectionByKeyPressed(e, main_ship, true);
+				if (!Resource.isGameOver)
+					setDirectionByKeyPressed(e, player, true);
+			}
+			@Override
+			public void keyTyped(KeyEvent e) {
+				if (!Resource.isGameOver)
+					setShoot(e, player);
 			}
 		});
 		new Thread(new Runnable() {
@@ -58,21 +63,47 @@ public class Game extends JPanel {
 			}
 		}
 	}
+
+	@Override
+	protected void paintComponent(Graphics graphic) {
+		super.paintComponent(graphic);
+		setBackground(Color.BLACK);
+		Resource.getInstance().hud(graphic, player);
+		player.draw(graphic);
+		enemy.showEnemys(graphic);
+	}
 	
 	public void handleEvents() {
-		main_ship.moviment();
+		player.moviment();
 	}
 	
 	public void update() {
-		main_ship.updateShipPosition();
-		main_ship.verifyColisionOnSides();
+		Resource.tickFrame();
+		gameRules();
+		
+		player.updateShipPosition();
+		player.updateBulletPosition();
+		player.verifyColisionOnSides();
+		
+		enemy.updateAlienPosition();
+	}
+	
+	public void gameRules() {
+		if (check) {
+			Resource.setTimeStamp(0);
+			check = !check;
+		}
+		Rules.enemySpanw(enemy);
+		Rules.isEnemyGetShoot(enemy, player);
+		Rules.enemyGetPlayer(enemy, player);
+		Rules.addAlienBonus(enemy);
 	}
 	
 	public void render() {
 		repaint();
 	}
 	
-	public void setDirectionByKeyPressed(KeyEvent e, Main_ship ship, boolean value) {
+	public void setDirectionByKeyPressed(KeyEvent e, Ship ship, boolean value) {
 		switch (e.getKeyCode()) {
 			case KeyEvent.VK_UP: ship.getDirection().setK_up(value); break;
 			case KeyEvent.VK_DOWN: ship.getDirection().setK_down(value); break;
@@ -81,14 +112,12 @@ public class Game extends JPanel {
 		}
 	}
 	
-	@Override
-	protected void paintComponent(Graphics graphic) {
-		super.paintComponent(graphic);
-		setBackground(Color.BLACK);
-		graphic.drawImage(main_ship.getImage(), main_ship.getPosX(), main_ship.getPosY(), null);
-		Resource.hud(graphic, main_ship);
-		graphic.drawImage(enemy.getImage(), enemy.getPosX(), enemy.getPosY(), null);
-
+	public void setShoot(KeyEvent e, Ship ship) {
+		if (e.getKeyChar() == ' ') {
+			ship.addBullet();
+		}
 	}
+	
+
 	
 }
